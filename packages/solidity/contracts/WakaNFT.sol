@@ -3,12 +3,10 @@ pragma solidity ^0.8.18;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract WakaNFT is ERC721, ERC721URIStorage, Ownable {
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIds;
+    uint256 private _nextTokenId;
 
     // Events for tracking verse creation
     event UpperVerseCreated(uint256 indexed tokenId, address creator, string upperVerse);
@@ -31,8 +29,7 @@ contract WakaNFT is ERC721, ERC721URIStorage, Ownable {
 
     // Function to create upper verse and start a new waka
     function createUpperVerse(string memory _upperVerse) public returns (uint256) {
-        uint256 tokenId = _tokenIds.current();
-        _tokenIds.increment();
+        uint256 tokenId = _nextTokenId++;
 
         verses[tokenId] = Verse({
             upperVerse: _upperVerse,
