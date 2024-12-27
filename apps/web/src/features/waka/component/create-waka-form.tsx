@@ -42,7 +42,7 @@ export default function CreateWakaForm() {
         throw new Error("Failed to create waka");
       }
 
-      const data = await response.json();
+      await response.json();
       // TODO: Implement Web3 signing logic here
       // TODO: Generate and navigate to collaboration URL
       router.refresh();
@@ -57,7 +57,7 @@ export default function CreateWakaForm() {
         <FormField
           control={form.control}
           name="upperVerse"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
               <FormLabel>上の句</FormLabel>
               <FormControl>
@@ -70,7 +70,7 @@ export default function CreateWakaForm() {
         <FormField
           control={form.control}
           name="lowerVerse"
-          render={({ field }) => (
+          render={({ field }: { field: any }) => (
             <FormItem>
               <FormLabel>下の句</FormLabel>
               <FormControl>

@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { WakaSchema } from "../schema/waka-schema";
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  { params: { id } }: { params: { id: string } }
 ) {
   try {
     // TODO: Implement database fetch logic
