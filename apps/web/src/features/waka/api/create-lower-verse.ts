@@ -1,28 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WakaSchema } from "../schema/waka-schema";
+import { addLowerVerse, verifySignature, getVerse } from "../utils/web3";
+import { ethers } from "ethers";
+import { getProvider } from "../utils/web3";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     // Validate the request body against the schema
-    const { verseId, lowerVerse, signature } = WakaSchema.lowerVerse.parse(body);
+    const { tokenId, lowerVerse, signature, signerAddress } = WakaSchema.lowerVerse.parse(body);
 
-    // TODO: Verify the signature using Web3
-    // This will be implemented when we add blockchain integration
+    // Verify the signature
+    const message = `Add lower verse to ${tokenId}: ${lowerVerse}`;
+    if (!verifySignature(message, signature, signerAddress)) {
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 400 }
+      );
+    }
 
-    // TODO: Fetch the upper verse using verseId from Supabase
-    // For now, we'll just return a success response
+    // Get the verse information to verify it exists and is incomplete
+    const provider = getProvider();
+    const verseInfo = await getVerse(provider, tokenId);
     
-    // In the future, this is where we would:
-    // 1. Verify both signatures
-    // 2. Combine verses into a complete waka
-    // 3. Mint the NFT
-    // 4. Store the complete waka in the database
+    if (!verseInfo || verseInfo.isComplete) {
+      return NextResponse.json(
+        { error: "Verse not found or already completed" },
+        { status: 400 }
+      );
+    }
+
+    // Create wallet from signature for contract interaction
+    const wallet = new ethers.Wallet(signature);
     
+    // Add lower verse and mint NFT
+    const { txHash } = await addLowerVerse(wallet, tokenId, lowerVerse);
+
     return NextResponse.json({ 
-      verseId,
+      tokenId,
+      txHash,
       lowerVerse,
-      signature,
+      signerAddress,
       status: "completed",
       message: "Lower verse added successfully"
     }, { status: 201 });

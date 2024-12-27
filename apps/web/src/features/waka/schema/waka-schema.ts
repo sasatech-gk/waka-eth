@@ -6,28 +6,35 @@ export const WakaSchema = {
       .min(1, "Upper verse is required")
       .max(100, "Upper verse must be less than 100 characters"),
     signature: z.string()
-      .optional()
+      .min(1, "Signature is required")
       .describe("Ethereum signature of the upper verse"),
+    signerAddress: z.string()
+      .min(1, "Signer address is required")
+      .describe("Ethereum address of the signer"),
   }),
   
   lowerVerse: z.object({
-    verseId: z.string()
-      .min(1, "Verse ID is required"),
+    tokenId: z.string()
+      .min(1, "Token ID is required"),
     lowerVerse: z.string()
       .min(1, "Lower verse is required")
       .max(100, "Lower verse must be less than 100 characters"),
     signature: z.string()
-      .optional()
+      .min(1, "Signature is required")
       .describe("Ethereum signature of the lower verse"),
+    signerAddress: z.string()
+      .min(1, "Signer address is required")
+      .describe("Ethereum address of the signer"),
   }),
 
   completeWaka: z.object({
-    id: z.string(),
+    tokenId: z.string(),
     upperVerse: z.string(),
     lowerVerse: z.string(),
-    upperVerseSignature: z.string().optional(),
-    lowerVerseSignature: z.string().optional(),
+    upperCreator: z.string(),
+    lowerCreator: z.string(),
+    txHash: z.string(),
     createdAt: z.string(),
-    completedAt: z.string().optional(),
+    completedAt: z.string(),
   }),
 };

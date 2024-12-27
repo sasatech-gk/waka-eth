@@ -1,27 +1,36 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WakaSchema } from "../schema/waka-schema";
 import { generateId } from "../utils/generate-id";
+import { createUpperVerse, verifySignature } from "../utils/web3";
+import { ethers } from "ethers";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     // Validate the request body against the schema
-    const { upperVerse, signature } = WakaSchema.upperVerse.parse(body);
+    const { upperVerse, signature, signerAddress } = WakaSchema.upperVerse.parse(body);
 
-    // TODO: Verify the signature using Web3
-    // This will be implemented when we add blockchain integration
+    // Verify the signature
+    const message = `Create upper verse: ${upperVerse}`;
+    if (!verifySignature(message, signature, signerAddress)) {
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 400 }
+      );
+    }
 
-    // Generate a unique ID for this verse
-    const verseId = generateId();
-
-    // TODO: Store the verse in Supabase
-    // For now, we'll return the ID that will be used to create the collaboration URL
+    // Create wallet from signature for contract interaction
+    const wallet = new ethers.Wallet(signature);
     
+    // Create upper verse on-chain
+    const { tokenId, txHash } = await createUpperVerse(wallet, upperVerse);
+
     return NextResponse.json({ 
-      verseId,
+      tokenId,
+      txHash,
       upperVerse,
-      signature,
-      collaborationUrl: `/waka/${verseId}/complete` 
+      signerAddress,
+      collaborationUrl: `/waka/${tokenId}/complete` 
     }, { status: 201 });
   } catch (error) {
     console.error("Error creating upper verse:", error);
