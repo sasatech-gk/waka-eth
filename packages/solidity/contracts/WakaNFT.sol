@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -29,9 +30,10 @@ contract WakaNFT is ERC721URIStorage, Ownable {
     constructor() ERC721("WakaNFT", "WAKA") Ownable(msg.sender) {}
 
     // Function to create upper verse and start a new waka
-    function createUpperVerse(string memory _upperVerse) public returns (uint256) {
+    function createUpperVerse(string memory _upperVerse, address recipient) public returns (uint256) {
         uint256 tokenId = _nextTokenId++;
-
+        _mint(recipient, tokenId);
+        _setTokenURI(tokenId, _generateTokenURI(tokenId));
         verses[tokenId] = Verse({
             upperVerse: _upperVerse,
             lowerVerse: "",
@@ -69,8 +71,8 @@ contract WakaNFT is ERC721URIStorage, Ownable {
         _setTokenURI(upperTokenId, _generateTokenURI(upperTokenId));
         _setTokenURI(lowerTokenId, _generateTokenURI(lowerTokenId));
 
-        // Burn the original token if it was minted
-        if (_exists(_tokenId)) {
+        // Burn the original token if it exists (has an owner)
+        if (_ownerOf(_tokenId) != address(0)) {
             _burn(_tokenId);
         }
 
@@ -115,21 +117,23 @@ contract WakaNFT is ERC721URIStorage, Ownable {
     }
 
     // Override transfer-related functions to implement SBT functionality
-    function _beforeTokenTransfer(
-        address from,
+    function _update(
         address to,
         uint256 tokenId,
-        uint256 batchSize
-    ) internal virtual override {
+        address auth
+    ) internal virtual override returns (address) {
+        address from = _ownerOf(tokenId);
         require(
-            !verses[tokenId].isComplete || from == address(0) || to == address(0),
+            from == address(0) || // Allow minting
+            to == address(0) || // Allow burning
+            !verses[tokenId].isComplete, // Allow transfer of incomplete verses
             "WakaNFT: Transfer of completed Waka is not allowed"
         );
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+        return super._update(to, tokenId, auth);
     }
 
     // Override approval functions to prevent approvals for completed Waka
-    function approve(address to, uint256 tokenId) public virtual override {
+    function approve(address to, uint256 tokenId) public virtual override(ERC721, IERC721) {
         require(
             !verses[tokenId].isComplete,
             "WakaNFT: Approval of completed Waka is not allowed"
@@ -137,7 +141,7 @@ contract WakaNFT is ERC721URIStorage, Ownable {
         super.approve(to, tokenId);
     }
 
-    function setApprovalForAll(address operator, bool approved) public virtual override {
+    function setApprovalForAll(address operator, bool approved) public virtual override(ERC721, IERC721) {
         revert("WakaNFT: setApprovalForAll is disabled for SBT functionality");
     }
 
