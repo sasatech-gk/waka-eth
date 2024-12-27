@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/utils/Base64.sol";
 
-contract WakaNFT is ERC721, ERC721URIStorage, Ownable {
+contract WakaNFT is ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
 
     // Events for tracking verse creation
@@ -54,8 +55,9 @@ contract WakaNFT is ERC721, ERC721URIStorage, Ownable {
         verse.lowerCreator = msg.sender;
         verse.isComplete = true;
 
-        // Mint the NFT to the upper verse creator
+        // Mint the NFT to the upper verse creator and set its URI
         _mint(verse.upperCreator, _tokenId);
+        _setTokenURI(_tokenId, _generateTokenURI(_tokenId));
 
         emit LowerVerseAdded(_tokenId, msg.sender, _lowerVerse);
         emit WakaCompleted(_tokenId, verse.upperCreator, msg.sender);
@@ -81,19 +83,25 @@ contract WakaNFT is ERC721, ERC721URIStorage, Ownable {
     }
 
     // Override required functions
-    function tokenURI(uint256 tokenId) public view override(ERC721URIStorage)
-        returns (string memory)
-    {
-        return super.tokenURI(tokenId);
+    function _generateTokenURI(uint256 tokenId) internal view returns (string memory) {
+        Verse memory verse = verses[tokenId];
+        string memory json = Base64.encode(
+            bytes(string(abi.encodePacked(
+                '{"name": "Waka #', 
+                Strings.toString(tokenId),
+                '", "description": "A collaborative Japanese poem (Waka)", "attributes": [{"trait_type": "Upper Verse", "value": "',
+                verse.upperVerse,
+                '"}, {"trait_type": "Lower Verse", "value": "',
+                verse.lowerVerse,
+                '"}]}'
+            )))
+        );
+        return string(abi.encodePacked("data:application/json;base64,", json));
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
-    }
-
-    function _burn(uint256 tokenId) internal override(ERC721URIStorage) {
-        super._burn(tokenId);
     }
 }
