@@ -37,14 +37,40 @@ export const createUpperVerse = async (
   const contract = await getWakaNFTContract(signer);
   const tx = await contract.createUpperVerse(upperVerse, recipientAddress);
   const receipt = await tx.wait();
-  return receipt;
+  
+  if (receipt && receipt.logs.length > 0) {
+    const event = contract.interface.parseLog({
+      topics: receipt.logs[0].topics,
+      data: receipt.logs[0].data,
+    });
+    if (event && event.name === 'UpperVerseCreated') {
+      return {
+        status: receipt.status,
+        tokenId: event.args[0],
+      };
+    }
+  }
+  return { status: receipt?.status ?? 0, tokenId: null };
 };
 
 export const addLowerVerse = async (signer: ethers.Signer, tokenId: number, lowerVerse: string) => {
   const contract = await getWakaNFTContract(signer);
   const tx = await contract.addLowerVerse(tokenId, lowerVerse);
   const receipt = await tx.wait();
-  return receipt;
+  
+  if (receipt && receipt.logs.length > 0) {
+    const event = contract.interface.parseLog({
+      topics: receipt.logs[0].topics,
+      data: receipt.logs[0].data,
+    });
+    if (event && event.name === 'LowerVerseAdded') {
+      return {
+        status: receipt.status,
+        success: true,
+      };
+    }
+  }
+  return { status: receipt?.status ?? 0, success: false };
 };
 
 export const getVerse = async (signer: ethers.Signer, tokenId: number) => {

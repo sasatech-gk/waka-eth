@@ -52,10 +52,36 @@ export function CreateLowerVerseForm() {
 
     try {
       const { signer } = await connectWallet();
-      await addLowerVerse(signer, parseInt(values.tokenId), values.verse);
-      form.reset();
+      setError('トランザクションを送信中...');
+      const result = await addLowerVerse(signer, parseInt(values.tokenId), values.verse);
+      
+      if (result.status === 1 && result.success) {
+        setError('下の句が追加され、和歌NFTが作成されました！');
+        form.reset();
+        try {
+          // Reload available tokens after successful transaction
+          const tokens = await getUserNFTs(signer);
+          setAvailableTokens(tokens);
+        } catch (err) {
+          console.error('Error reloading tokens:', err);
+          // Don't show error to user since the main transaction succeeded
+        }
+      } else {
+        setError('トランザクションは失敗しました。もう一度お試しください。');
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add verse');
+      console.error('Error adding lower verse:', err);
+      if (err instanceof Error) {
+        if (err.message.includes('user rejected')) {
+          setError('トランザクションがキャンセルされました');
+        } else if (err.message.includes('insufficient funds')) {
+          setError('ETHの残高が不足しています');
+        } else {
+          setError(`エラー: ${err.message}`);
+        }
+      } else {
+        setError('下の句の追加に失敗しました');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -109,8 +135,15 @@ export function CreateLowerVerseForm() {
               )}
             />
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? '処理中...' : '下の句を追加'}
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  処理中...
+                </div>
+              ) : (
+                '下の句を追加'
+              )}
             </Button>
           </form>
         </Form>

@@ -39,14 +39,15 @@ export function CreateUpperVerseForm() {
 
     try {
       const { signer } = await connectWallet();
-      const tx = await createUpperVerse(signer, values.verse, values.recipientAddress);
+      setError('トランザクションを送信中...');
+      const result = await createUpperVerse(signer, values.verse, values.recipientAddress);
       
-      // Wait for transaction confirmation
-      setError('トランザクションの確認を待っています...');
-      await tx.wait();
-      
-      setError('上の句が作成されました！');
-      form.reset();
+      if (result.status === 1 && result.tokenId) {
+        setError(`上の句が作成されました！NFT ID: ${result.tokenId}`);
+        form.reset();
+      } else {
+        setError('トランザクションは失敗しました。もう一度お試しください。');
+      }
     } catch (err) {
       console.error('Error creating verse:', err);
       if (err instanceof Error) {
@@ -106,8 +107,15 @@ export function CreateUpperVerseForm() {
               )}
             />
             {error && <p className="text-red-500 text-sm">{error}</p>}
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? '処理中...' : '上の句を作成'}
+            <Button type="submit" disabled={isLoading} className="w-full">
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  処理中...
+                </div>
+              ) : (
+                '上の句を作成'
+              )}
             </Button>
           </form>
         </Form>
