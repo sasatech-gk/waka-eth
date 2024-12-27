@@ -1,9 +1,15 @@
 {
-  "name": "solidity",
+  "name": "@waka-eth/contracts",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "typechain-types/index.js",
+  "types": "typechain-types/index.d.ts",
+  "files": [
+    "typechain-types",
+    "artifacts"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "hardhat compile",
+    "test": "hardhat test"
   },
   "keywords": [],
   "author": "",
