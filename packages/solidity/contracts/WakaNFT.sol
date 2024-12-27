@@ -55,9 +55,24 @@ contract WakaNFT is ERC721URIStorage, Ownable {
         verse.lowerCreator = msg.sender;
         verse.isComplete = true;
 
-        // Mint the NFT to the upper verse creator and set its URI
-        _mint(verse.upperCreator, _tokenId);
-        _setTokenURI(_tokenId, _generateTokenURI(_tokenId));
+        // Generate new token IDs for both participants
+        uint256 upperTokenId = _nextTokenId++;
+        uint256 lowerTokenId = _nextTokenId++;
+
+        // Copy verse data to new tokens
+        verses[upperTokenId] = verse;
+        verses[lowerTokenId] = verse;
+
+        // Mint new NFTs to both creators and set their URIs
+        _mint(verse.upperCreator, upperTokenId);
+        _mint(verse.lowerCreator, lowerTokenId);
+        _setTokenURI(upperTokenId, _generateTokenURI(upperTokenId));
+        _setTokenURI(lowerTokenId, _generateTokenURI(lowerTokenId));
+
+        // Burn the original token if it was minted
+        if (_exists(_tokenId)) {
+            _burn(_tokenId);
+        }
 
         emit LowerVerseAdded(_tokenId, msg.sender, _lowerVerse);
         emit WakaCompleted(_tokenId, verse.upperCreator, msg.sender);
@@ -97,6 +112,33 @@ contract WakaNFT is ERC721URIStorage, Ownable {
             )))
         );
         return string(abi.encodePacked("data:application/json;base64,", json));
+    }
+
+    // Override transfer-related functions to implement SBT functionality
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        uint256 batchSize
+    ) internal virtual override {
+        require(
+            !verses[tokenId].isComplete || from == address(0) || to == address(0),
+            "WakaNFT: Transfer of completed Waka is not allowed"
+        );
+        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    }
+
+    // Override approval functions to prevent approvals for completed Waka
+    function approve(address to, uint256 tokenId) public virtual override {
+        require(
+            !verses[tokenId].isComplete,
+            "WakaNFT: Approval of completed Waka is not allowed"
+        );
+        super.approve(to, tokenId);
+    }
+
+    function setApprovalForAll(address operator, bool approved) public virtual override {
+        revert("WakaNFT: setApprovalForAll is disabled for SBT functionality");
     }
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721URIStorage)
