@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { WakaNFT__factory } from '@waka-eth/contracts/typechain-types';
+import { WakaNFT__factory } from '@waka-eth/contracts/typechain-types/factories/contracts/WakaNFT__factory';
 
 import type { Eip1193Provider } from 'ethers';
 
@@ -50,4 +50,42 @@ export const addLowerVerse = async (signer: ethers.Signer, tokenId: number, lowe
 export const getVerse = async (signer: ethers.Signer, tokenId: number) => {
   const contract = await getWakaNFTContract(signer);
   return contract.getVerse(tokenId);
+};
+
+export const getUserNFTs = async (signer: ethers.Signer) => {
+  const contract = await getWakaNFTContract(signer);
+  const address = await signer.getAddress();
+  
+  // Get all UpperVerseCreated events where recipient is the current user
+  const filter = contract.filters.UpperVerseCreated();
+  const events = await contract.queryFilter(filter);
+  
+  const userNFTs = [];
+  
+  for (const event of events) {
+    try {
+      const tokenId = event.args[0];
+      const verse = await contract.getVerse(tokenId);
+      
+      try {
+        const owner = await contract.ownerOf(tokenId);
+        // Only include NFTs owned by the user and without lower verse
+        if (owner === address && !verse.isComplete) {
+        userNFTs.push({
+          tokenId: Number(tokenId),
+          upperVerse: verse.upperVerse,
+        });
+        }
+      } catch {
+        // Skip burned or non-existent tokens
+        continue;
+      }
+    } catch (err) {
+      console.error('Error fetching NFT:', err);
+      // Skip failed NFTs
+      continue;
+    }
+  }
+  
+  return userNFTs;
 };

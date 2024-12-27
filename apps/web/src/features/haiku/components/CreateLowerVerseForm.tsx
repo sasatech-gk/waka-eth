@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { connectWallet, addLowerVerse, getVerse } from '../utils/web3';
+import { connectWallet, addLowerVerse, getVerse, getWakaNFTContract, getUserNFTs } from '../utils/web3';
+import { useEffect } from 'react';
 import { ethers } from 'ethers';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,22 @@ const formSchema = z.object({
 export function CreateLowerVerseForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableTokens, setAvailableTokens] = useState<Array<{ tokenId: number; upperVerse: string }>>([]);
+
+  useEffect(() => {
+    const loadAvailableTokens = async () => {
+      try {
+        const { signer } = await connectWallet();
+        const tokens = await getUserNFTs(signer);
+        setAvailableTokens(tokens);
+      } catch (err) {
+        console.error('Error loading tokens:', err);
+        setError('NFTの読み込みに失敗しました');
+      }
+    };
+
+    loadAvailableTokens();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,11 +76,17 @@ export function CreateLowerVerseForm() {
                 <FormItem>
                   <FormLabel>NFT ID</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      placeholder="NFT IDを入力してください"
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       {...field}
-                    />
+                    >
+                      <option value="">NFTを選択してください</option>
+                      {availableTokens.map((token) => (
+                        <option key={token.tokenId} value={token.tokenId}>
+                          NFT #{token.tokenId} - {token.upperVerse}
+                        </option>
+                      ))}
+                    </select>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
