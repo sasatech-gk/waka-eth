@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { WakaSchema } from "../schema/waka-schema";
-import { generateId } from "../utils/generate-id";
 import { createUpperVerse, verifySignature } from "../utils/web3";
 import { ethers } from "ethers";
 

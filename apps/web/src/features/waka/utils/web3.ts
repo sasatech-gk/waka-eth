@@ -58,7 +58,8 @@ export const createUpperVerse = async (
   
   // Get tokenId from the UpperVerseCreated event
   const event = receipt.logs.find(
-    (log: any) => log.fragment?.name === 'UpperVerseCreated'
+    (log: ethers.Log): log is ethers.EventLog => 
+      log instanceof ethers.EventLog && log.fragment?.name === 'UpperVerseCreated'
   );
   const tokenId = event?.args?.[0].toString();
 
